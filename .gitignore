@@ -1,0 +1,11 @@
+__pycache__/
+.omx/
+.next/
+dist/
+build/
+coverage/
+.cache/
+node_modules/
+.pytest_cache/
+*.pyc
+.DS_Store
