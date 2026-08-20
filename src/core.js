@@ -29,7 +29,7 @@ export class VoiceCore {
   belongs(sessionId) { return Boolean(this.sessionId) && sessionId === this.sessionId; }
   start(sessionId) { if (!sessionId) return false; if (this.sessionId && this.sessionId !== sessionId) this.hooks.onRecord('stop', this.sessionId); this.setSession(sessionId); this.cancelRearm(); this.resetTurnState(); this.armed = true; this.hooks.onVoice('on'); this.status(PHASES.LISTENING); this.hooks.onRecord('start', sessionId); return true; }
   stop() { this.cancelRearm(); if (this.phase !== PHASES.OFF && this.sessionId) this.hooks.onRecord('stop', this.sessionId); this.hooks.onVoice('off'); this.status(PHASES.OFF); this.sessionId = null; this.armed = false; this.resetTurnState(); }
-  wake(sessionId = this.sessionId) { if (!this.belongs(sessionId)) return { ignored: true }; this.armed = true; this.afterReply = false; this.status(PHASES.LISTENING); return { accepted: false, armed: true, reason: 'wake' }; }
+  wake(sessionId = this.sessionId) { if (!this.belongs(sessionId)) return { ignored: true }; this.armed = true; this.afterReply = false; this.status(PHASES.LISTENING); this.ensureIdleRearm(); return { accepted: false, armed: true, reason: 'wake' }; }
   voiceStatus(sessionId, state) { if (!this.belongs(sessionId)) return { ignored: true }; if (['idle', 'ready', 'stopped', 'complete', 'done'].includes(String(state).toLowerCase())) { this.status(PHASES.IDLE); this.ensureIdleRearm(); } return { ignored: false }; }
   acceptTranscript(sessionId, raw) {
     if (!this.belongs(sessionId)) return { accepted: false, ignored: true, reason: 'session mismatch' }; const text = String(raw ?? '').trim(), n = normalizeTranscript(text), choice = choiceOf(text);
