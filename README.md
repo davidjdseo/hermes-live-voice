@@ -11,9 +11,9 @@ adapter contract are ready for future public seams.
 
 Here, “full-duplex” describes orchestration of overlapping turn states and
 barge-in behavior. This project does not provide true acoustic AEC or native
-simultaneous model audio. It is useful as a building block for a full-duplex
-voice agent or barge-in voice assistant, not as an always-listening AI
-assistant by itself.
+simultaneous model audio. The v0.1 bridge is a building block. The optional
+`always-on` layer in this package adds a local wake → listen → speak loop on
+top of the same `VoiceCore`, still without owning models, API keys, or OAuth.
 
 It is not a new STT/TTS model, an always-listening service, or a claim that
 every listed harness currently exposes microphone or TTS APIs. Unsupported
@@ -87,6 +87,31 @@ await bridge.dispose()
 
 See [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) for pain points, exact
 requirements, official seam evidence, and future-harness recipes.
+
+## Always-on layer (optional)
+
+`createAlwaysOn()` is an optional supervisor that owns capture, wake word,
+VAD, STT, and TTS engines while reusing `VoiceCore` for session gates
+(wake, echo, continue, barge-in). The JS core stays dependency-free. Heavy
+engines (openWakeWord, faster-whisper, kokoro-onnx) live in a Python sidecar
+that you opt into.
+
+```js
+import { createAlwaysOn } from 'hermes-live-voice/always-on'
+
+const assistant = createAlwaysOn({ engines, backend })
+assistant.on('wake', () => {})
+assistant.on('utterance', text => {})
+assistant.on('interrupted', () => {})
+await assistant.start()
+```
+
+Custom engines are the supported path today. A sidecar client
+(`hermes-live-voice/always-on/sidecar`) speaks JSONL over stdio; the
+reference Python engine is not shipped in this tag. Design notes:
+[docs/ALWAYS_ON_DESIGN.md](docs/ALWAYS_ON_DESIGN.md). Copy-paste examples:
+[`examples/always-on-custom.js`](examples/always-on-custom.js),
+[`examples/always-on-python.js`](examples/always-on-python.js).
 
 ## Protocol
 

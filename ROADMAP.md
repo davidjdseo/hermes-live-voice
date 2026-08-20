@@ -7,6 +7,17 @@
 - Agent Voice Bridge package entrypoint with reusable lifecycle/event dispatch
 - deterministic session, echo, interruption, and re-arm tests
 
+## v0.2 — Always-on layer (in tree)
+
+- `createAlwaysOn()` supervisor over `VoiceCore` (`hermes-live-voice/always-on`)
+- five engine contracts: AudioSource, WakewordEngine, VadEngine, STTEngine, TTSEngine
+- JSONL sidecar protocol + JS client (`hermes-live-voice/always-on/sidecar`)
+- fake-engine state-machine tests and protocol conformance tests
+- examples under `examples/`
+
+Not in this tag: a shipped Python reference engine, AEC, speech-to-speech
+passthrough, or any claim that barge-in works on loudspeakers.
+
 ## Later, only with a real public seam
 
 - additional harness adapters with explicit approval/session contracts;

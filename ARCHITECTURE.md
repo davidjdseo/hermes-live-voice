@@ -26,5 +26,10 @@ installer's macOS link mode uses a narrow managed shim under
 `~/.hermes/desktop-plugins/`; its sole `plugin.js` is a symlink to the checkout.
 This is an installation compatibility detail, not a second plugin implementation.
 
-The Python half is intentionally a no-op registration boundary: voice uses
-Hermes public RPCs and does not bypass approval or policy handling.
+The Python half of the Hermes plugin is still a no-op registration boundary:
+voice uses Hermes public RPCs and does not bypass approval or policy handling.
+
+The optional always-on layer (`src/alwayson/`) is a supervisor, not a second
+core. It owns audio capture, wake/VAD/STT/TTS engines, and a JSONL sidecar
+client. Session gates stay in `VoiceCore`. Engines are duck-typed; the JS
+package still has no npm dependencies.
