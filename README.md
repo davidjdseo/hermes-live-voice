@@ -59,6 +59,7 @@ device is the default input, voice recording can report RMS 0 even while wake
 word detection works. In macOS System Settings → Sound → Input, select a real
 microphone as the default input. `SwitchAudioSource` can automate that switch,
 but it is optional and not a project dependency.
+After changing the CoreAudio default input, restart Hermes Desktop because an already-running voice process may retain the previously opened device.
 
 ```sh
 git clone https://github.com/davidjdseo/hermes-live-voice.git
