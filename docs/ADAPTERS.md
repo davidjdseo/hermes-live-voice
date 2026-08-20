@@ -1,9 +1,11 @@
 # Agent harness adapters
 
-VoiceCore is transport-independent. An AgentHarnessAdapter is the small
-boundary between this project and a voice-capable agent harness. Hermes
-is the only production adapter in v0.1; every other target below is planned or
-community work.
+VoiceCore is transport-independent. `createVoiceBridge` is the reusable
+boundary that constructs VoiceCore, owns normalized event dispatch and session
+ownership, and exposes async start/stop/dispose. An AgentHarnessAdapter is the
+small transport boundary between this project and a voice-capable agent
+harness. Hermes is the only production adapter in v0.1; every other target is
+planned or community work.
 
 ## Contract
 

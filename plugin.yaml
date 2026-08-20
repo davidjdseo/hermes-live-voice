@@ -1,6 +1,6 @@
 name: hermes-live-voice
 version: "0.1.0"
-description: "Local-first GPT-Live-like voice orchestration for Hermes Agent v0.20.4 using the existing voice engine."
+description: "Agent Voice Bridge desktop adapter for Hermes Agent v0.20.4 using the existing local voice engine."
 author: "Hermes Live Voice contributors"
 kind: standalone
 desktop: desktop/plugin.js

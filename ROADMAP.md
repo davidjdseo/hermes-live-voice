@@ -4,6 +4,7 @@
 
 - Hermes Agent v0.20.4 public RPC adapter
 - portable marker protocol and harness-neutral core
+- Agent Voice Bridge package entrypoint with reusable lifecycle/event dispatch
 - deterministic session, echo, interruption, and re-arm tests
 
 ## Later, only with a real public seam
@@ -17,18 +18,12 @@
 These are targets, not support claims. Each adapter remains planned/community
 until its public seam and acceptance checks are verified.
 
-- Orca adapter: document the public session/event/audio seam; map its
-  worktree/terminal/agent lifecycle without cross-session routing; verify
-  start/stop, interruption, stale-event rejection, permissions, cleanup, and
-  a focused integration check.
-- Paseo adapter: document public workspace/agent/session ownership and voice
-  events; bridge lifecycle teardown idempotently; verify the six contract
-  capabilities, interruption, stale events, privacy boundaries, cleanup, and
-  a focused integration check.
-- Pi Coding Agent adapter: publish an extension or RPC/SDK bridge; map session
-  identity, turn events, microphone/TTS/prompt paths, and handle ownership;
-  verify interruption, session switching, permission failures, no audio or
-  transcript leakage, cleanup, and a focused integration check.
+- Paseo, Codex CLI, Claude Code, and Orca adapters: document the public
+  session/event/audio seam; map each harness lifecycle without cross-session
+  routing; verify start/stop, interruption, stale-event rejection,
+  permissions, cleanup, and a focused integration check. Their current public
+  extension/session seams do not yet establish the required native microphone
+  and TTS contract.
 
 No IDE integration, remote audio service, new model, or framework is planned
 without a concrete supported API and a testable user need.

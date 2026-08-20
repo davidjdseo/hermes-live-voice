@@ -8,13 +8,18 @@ bounded injectable re-arm timer.
 
 `src/adapters/contract.js` defines the small harness boundary. Hermes-specific
 `RpcEvent { type, session_id, payload }` normalization and public RPC wiring
-live in `src/adapters/hermes.js`; event ownership is checked against the
-controller session, not a changing focused-tab value.
+live in `src/adapters/hermes.js`. `src/bridge.js` constructs `VoiceCore`,
+subscribes to every normalized voice/message event, dispatches only events
+owned by the active session, and exposes async `start`, `stop`, and `dispose`.
+Ownership is checked against the controller session, not a changing focused-tab
+value.
 
 `src/plugin.template.js` is the only desktop integration. The stdlib Node
-script injects the core and Hermes adapter into a plain ESM file. The shipped file
-imports only `@hermes/plugin-sdk` and `react/jsx-runtime`, uses an SDK atom for
-reactive UI, and stores a global runtime disposer for hot reload.
+script injects the core, Hermes adapter, generic bridge, and compatibility
+runtime helpers into a plain ESM file. The shipped file imports only
+`@hermes/plugin-sdk` and `react/jsx-runtime`, uses an SDK atom for reactive UI,
+and stores a global runtime disposer for hot reload. The package exports the
+bridge, core, contract, and adapter entrypoints without adding dependencies.
 
 The Hermes Desktop disk scanner currently requires a real directory entry. The
 installer's macOS link mode uses a narrow managed shim under

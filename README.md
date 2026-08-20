@@ -1,12 +1,13 @@
-# Hermes Live Voice — Portable Voice Orchestration for Agent Harnesses
+# Agent Voice Bridge — Voice Orchestration for Agent Harnesses
 
 [![CI](https://github.com/davidjdseo/hermes-live-voice/actions/workflows/ci.yml/badge.svg)](https://github.com/davidjdseo/hermes-live-voice/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/davidjdseo/hermes-live-voice/blob/main/LICENSE)
 
-Hermes Live Voice is a harness-neutral, portable voice orchestration layer for
-full-duplex-style spoken turns, barge-in semantics, and conversational flow in
-agent products. The generic core is designed to travel through adapters;
-Hermes Agent v0.20.4 is the only production adapter in v0.1.
+Agent Voice Bridge is a dependency-free, attachable voice-agent bridge for
+session ownership, spoken turns, TTS/STT handoff, and barge-in semantics across
+coding-agent harnesses. The repository slug remains `hermes-live-voice` because
+Hermes is the first and only real adapter in v0.1; the generic bridge and
+adapter contract are ready for future public seams.
 
 Here, “full-duplex” describes orchestration of overlapping turn states and
 barge-in behavior. This project does not provide true acoustic AEC or native
@@ -14,9 +15,10 @@ simultaneous model audio. It is useful as a building block for a full-duplex
 voice agent or barge-in voice assistant, not as an always-listening AI
 assistant by itself.
 
-It is not a new STT/TTS model, an always-listening service, or an IDE plugin
-collection. Unsupported harnesses are clearly marked as planned or community
-targets below.
+It is not a new STT/TTS model, an always-listening service, or a claim that
+every listed harness currently exposes microphone or TTS APIs. Unsupported
+harnesses are clearly marked as planned or community targets in
+[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
 
 ## Inspired by GPT Live-style interaction
 
@@ -30,7 +32,7 @@ That is inspiration, not affiliation or endorsement. Hermes Live Voice does
 not claim OpenAI protocol or API compatibility and does not use an OpenAI
 realtime model.
 
-## Works anywhere via adapters
+## Attachable via adapters
 
 An agent harness only needs six capabilities for an adapter:
 
@@ -43,16 +45,9 @@ An agent harness only needs six capabilities for an adapter:
 
 | Target | Status | Boundary |
 | --- | --- | --- |
-| Generic `VoiceCore` | Implemented | Harness-neutral session and barge-in logic. |
+| Generic `createVoiceBridge` | Implemented | Reusable VoiceCore construction, event dispatch, session ownership, and lifecycle. |
 | Hermes Agent | Implemented | v0.1 production adapter using public RPCs and `RpcEvent`. |
-| Orca | Planned / community adapter | Needs a public voice and event/audio seam. |
-| Paseo | Planned / community adapter | Needs a public voice/event lifecycle surface. |
-| Pi Coding Agent | Planned / community adapter | Best path is an extension or RPC bridge. |
-| Claude Code | Planned / community adapter | No adapter is included. |
-| Codex CLI | Planned / community adapter | No adapter is included. |
-| Cursor | Planned / community adapter | No adapter is included. |
-| VS Code | Planned / community adapter | No adapter is included. |
-| JetBrains | Planned / community adapter | No adapter is included. |
+| Paseo, Codex CLI, Claude Code, Orca | Planned / contract-ready | Adapter templates only; see the truthful public-seam matrix. |
 
 The adapter contract and authoring rules are in
 [docs/ADAPTERS.md](docs/ADAPTERS.md). A copy-paste starting point is
@@ -78,6 +73,20 @@ const adapter = createExampleAdapter({
 
 The snippet is a contract-shaped pseudo-integration: it does not claim that
 any listed future harness currently exposes those public methods.
+
+The package entry point is the bridge itself:
+
+```js
+import { createVoiceBridge } from 'hermes-live-voice'
+
+const bridge = createVoiceBridge(adapter)
+await bridge.start(sessionId)
+await bridge.stop()
+await bridge.dispose()
+```
+
+See [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) for pain points, exact
+requirements, official seam evidence, and future-harness recipes.
 
 ## Protocol
 
@@ -111,10 +120,12 @@ adapter ── event normalization + session ownership ──┐
              voice.record                         voice.tts     prompt.submit
 ```
 
-`VoiceCore` has no Hermes imports. A small `AgentHarnessAdapter` contract
-defines session lookup, voice/request verbs, submission, and normalized event
-subscription. Hermes is implemented in `src/adapters/hermes.js`; the
-dependency-free example shape is in `src/adapters/example.js`.
+`VoiceCore` has no Hermes imports. `createVoiceBridge` owns its construction,
+normalized event dispatch, session ownership, and async lifecycle. A small
+`AgentHarnessAdapter` contract defines session lookup, voice/request verbs,
+submission, and normalized event subscription. Hermes is implemented in
+`src/adapters/hermes.js`; the dependency-free example shape is in
+`src/adapters/example.js`.
 
 ## Quickstart
 
