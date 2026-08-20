@@ -182,13 +182,13 @@ The wake prefix is stripped, the command is submitted to the selected session,
 and meaningful speech during generation/playback is submitted with
 `interrupted: true`.
 
-While Live Voice is on, say the wake phrase and command in one utterance for
-best reliability, such as `헤이 헤르메스, 날씨 알려줘`.
+While Live Voice is on, saying the wake phrase and command in one utterance is
+the fastest and recommended path, such as `헤이 헤르메스, 날씨 알려줘`.
 
-A bare `헤이 헤르메스` wake is an activation only: it clears the after-reply
-gate, re-arms the recorder through the same single pending timer used by idle
-status, and waits for the next meaningful transcript. It does not submit an
-empty prompt; filler/noise and unapproved post-reply speech remain ignored.
+A bare `헤이 헤르메스` wake answers `네, 말씀하세요.` and then listens. It
+clears the after-reply gate and re-arms the recorder through the same single
+bounded pending timer used by idle status. It does not submit an empty prompt;
+filler/noise and unapproved post-reply speech remain ignored.
 
 ## Privacy and limitations
 
