@@ -1,7 +1,7 @@
 # Live Voice Agent
 
-[![CI](https://github.com/davidjdseo/hermes-live-voice/actions/workflows/ci.yml/badge.svg)](https://github.com/davidjdseo/hermes-live-voice/actions/workflows/ci.yml)
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/davidjdseo/hermes-live-voice/blob/main/LICENSE)
+[![CI](https://github.com/davidjdseo/live-voice-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/davidjdseo/live-voice-agent/actions/workflows/ci.yml)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/davidjdseo/live-voice-agent/blob/main/LICENSE)
 
 A live spoken assistant loop you can attach to any agent harness.
 Hermes is one adapter. Paseo, Codex CLI, Claude Code, and Orca plug in
@@ -14,8 +14,8 @@ npx live-voice-agent demo
 Type a line. Hear a spoken-style reply. No API key, no microphone required
 for the demo. Swap `ask()` for your agent when you want the real brain.
 
-The GitHub slug is still `hermes-live-voice` until the repository is
-renamed. The npm package name is `live-voice-agent`.
+The GitHub repo is [davidjdseo/live-voice-agent](https://github.com/davidjdseo/live-voice-agent).
+The npm package name is `live-voice-agent`.
 
 This is not a new STT/TTS model and not a claim that every listed harness
 already has a native microphone. Planned adapters refuse to pretend.
@@ -186,8 +186,8 @@ After changing the CoreAudio default input, restart Hermes Desktop because an
 already-running voice process may retain the previously opened device.
 
 ```sh
-git clone https://github.com/davidjdseo/hermes-live-voice.git
-cd hermes-live-voice
+git clone https://github.com/davidjdseo/live-voice-agent.git
+cd live-voice-agent
 python3 scripts/install.py
 ```
 

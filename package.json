@@ -6,11 +6,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/davidjdseo/hermes-live-voice.git"
+    "url": "https://github.com/davidjdseo/live-voice-agent.git"
   },
-  "homepage": "https://github.com/davidjdseo/hermes-live-voice",
+  "homepage": "https://github.com/davidjdseo/live-voice-agent",
   "bugs": {
-    "url": "https://github.com/davidjdseo/hermes-live-voice/issues"
+    "url": "https://github.com/davidjdseo/live-voice-agent/issues"
   },
   "exports": {
     ".": "./src/bridge.js",
