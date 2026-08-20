@@ -5,7 +5,7 @@ Live Voice Agent does not ship model weights. It talks to engines you already ru
 | Kind | How | Best for | Key |
 | --- | --- | --- | --- |
 | `silence` | Energy VAD placeholder | Tests / no ASR yet | none |
-| `voicebox` | Local Voicebox `POST /transcribe` at `127.0.0.1:17493` | Mac MLX Whisper already installed | Voicebox app running |
+| `voicebox` | Local Voicebox `POST /transcribe` at `127.0.0.1:17493` | Mac MLX Whisper already installed | Voicebox app running; field is `model` |
 | `whisper-cli` | `whisper-cli -f utterance.wav` | whisper.cpp on disk | binary + model |
 | `openai` | `POST /v1/audio/transcriptions` | Cloud Whisper | `OPENAI_API_KEY` |
 | `groq` | Groq OpenAI-compatible Whisper Large v3 Turbo | Fast multilingual cloud | `GROQ_API_KEY` |

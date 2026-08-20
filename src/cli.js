@@ -142,7 +142,7 @@ async function demo(argv) {
 async function live(argv) {
   const log = message => console.log(message)
   const brain = parseFlag(argv, '--brain', 'echo')
-  const stt = parseFlag(argv, '--stt', process.env.LIVE_VOICE_STT || 'silence')
+  const stt = parseFlag(argv, '--stt', process.env.LIVE_VOICE_STT || 'voicebox')
   const engines = createLocalEngines({ keyword: 'hey jarvis', stt })
   const backend = createAgentBackend({ brain, agentId: parseFlag(argv, '--agent') })
   const assistant = createAlwaysOn({ engines, backend, maxUtteranceMs: 20000, preRollMs: 1500, sampleRate: 16000 })
@@ -178,9 +178,18 @@ function doctor() {
     ['paseo', which('paseo') || 'optional'],
     ['orca', which('orca') || 'optional'],
     ['whisper', which('whisper-cli') || which('whisper') || 'optional local STT'],
-    ['voicebox', process.env.LIVE_VOICE_VOICEBOX_URL || 'http://127.0.0.1:17493'],
   ]
   for (const [name, value] of rows) console.log(`${name.padEnd(8)} ${value}`)
+  const voiceboxUrl = process.env.LIVE_VOICE_VOICEBOX_URL || 'http://127.0.0.1:17493'
+  let voicebox = 'down'
+  try {
+    const result = spawnSync('curl', ['-sS', '-m', '2', `${voiceboxUrl}/health`], { encoding: 'utf8' })
+    if (result.status === 0 && result.stdout.includes('"healthy"')) voicebox = `up ${voiceboxUrl}`
+    else voicebox = `not healthy ${voiceboxUrl}`
+  } catch {
+    voicebox = `unreachable ${voiceboxUrl}`
+  }
+  console.log(`${'voicebox'.padEnd(8)} ${voicebox}`)
   if (!which('ffmpeg')) process.exitCode = 1
 }
 

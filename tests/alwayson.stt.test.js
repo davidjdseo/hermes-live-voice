@@ -40,7 +40,7 @@ test('wav packaging is a valid RIFF header', () => {
   assert.equal(wav.toString('ascii', 8, 12), 'WAVE')
 })
 
-test('voicebox STT posts multipart to /transcribe', async () => {
+test('voicebox STT posts multipart model field to /transcribe', async () => {
   const calls = []
   const fetchImpl = async (url, init) => {
     calls.push({ url, init })
@@ -50,6 +50,8 @@ test('voicebox STT posts multipart to /transcribe', async () => {
   assert.equal(events[0].text, '안녕')
   assert.equal(calls[0].url, 'http://127.0.0.1:17493/transcribe')
   assert.equal(calls[0].init.method, 'POST')
+  assert.equal(calls[0].init.body.get('model'), 'base')
+  assert.equal(calls[0].init.body.get('language'), 'ko')
 })
 
 test('elevenlabs STT uses xi-api-key and scribe_v2', async () => {

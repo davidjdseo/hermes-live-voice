@@ -189,7 +189,7 @@ export function createGroqStt(options = {}) {
 
 export function createVoiceboxStt({
   baseUrl = process.env.LIVE_VOICE_VOICEBOX_URL || 'http://127.0.0.1:17493',
-  modelSize = process.env.LIVE_VOICE_VOICEBOX_MODEL || 'turbo',
+  model = process.env.LIVE_VOICE_VOICEBOX_MODEL || 'base',
   fetchImpl = globalThis.fetch,
 } = {}) {
   return {
@@ -201,7 +201,7 @@ export function createVoiceboxStt({
         const body = new FormData()
         body.append('file', new Blob([wav], { type: 'audio/wav' }), 'utterance.wav')
         body.append('language', languageOf(opts))
-        body.append('model_size', modelSize)
+        body.append('model', model)
         const response = await fetchImpl(`${String(baseUrl).replace(/\/$/, '')}/transcribe`, {
           method: 'POST',
           body,
