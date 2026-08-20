@@ -1,6 +1,6 @@
-import { createAlwaysOn } from 'hermes-live-voice/always-on'
-import { pythonEngine } from 'hermes-live-voice/always-on/sidecar'
-import { createHermesAdapter } from 'hermes-live-voice/adapters/hermes'
+import { createAlwaysOn } from 'live-voice-agent/always-on'
+import { pythonEngine } from 'live-voice-agent/always-on/sidecar'
+import { createHermesAdapter } from 'live-voice-agent/adapters/hermes'
 
 const assistant = createAlwaysOn({
   engines: pythonEngine({ wakeModel: 'hey_jarvis', sttModel: 'base', voice: 'af_heart' }),

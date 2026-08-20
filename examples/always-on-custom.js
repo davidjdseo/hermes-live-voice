@@ -1,4 +1,4 @@
-import { createAlwaysOn } from 'hermes-live-voice/always-on'
+import { createAlwaysOn } from 'live-voice-agent/always-on'
 
 const assistant = createAlwaysOn({
   engines: {

@@ -1,1 +1,70 @@
-{"name":"hermes-live-voice","version":"0.1.0","description":"Agent Voice Bridge: a dependency-free voice-agent bridge for harness sessions, barge-in, and TTS/STT adapters.","type":"module","license":"MIT","repository":{"type":"git","url":"https://github.com/davidjdseo/hermes-live-voice.git"},"homepage":"https://github.com/davidjdseo/hermes-live-voice","bugs":{"url":"https://github.com/davidjdseo/hermes-live-voice/issues"},"exports":{".":"./src/bridge.js","./bridge":"./src/bridge.js","./core":"./src/core.js","./always-on":"./src/alwayson/runtime.js","./always-on/sidecar":"./src/alwayson/sidecar/engine.js","./adapters/contract":"./src/adapters/contract.js","./adapters/example":"./src/adapters/example.js","./adapters/hermes":"./src/adapters/hermes.js"},"files":["desktop","src","scripts/*.py","scripts/build.js","skills","plugin.yaml","__init__.py","README.md","ARCHITECTURE.md","SECURITY.md","docs","LICENSE"],"engines":{"node":">=20"},"scripts":{"build":"node scripts/build.js","test":"node --test tests/*.test.js"},"keywords":["agent voice bridge","voice agent","coding agent","hermes","paseo","codex cli","claude code","orca","mcp","tts","stt","barge in","full duplex","gpt live style","voice agent harness","agent harness","voice orchestration"]}
+{
+  "name": "live-voice-agent",
+  "version": "0.1.0",
+  "description": "Live Voice Agent: always-on spoken assistant loop for any agent harness. Hermes is one adapter, not the product.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/davidjdseo/hermes-live-voice.git"
+  },
+  "homepage": "https://github.com/davidjdseo/hermes-live-voice",
+  "bugs": {
+    "url": "https://github.com/davidjdseo/hermes-live-voice/issues"
+  },
+  "exports": {
+    ".": "./src/bridge.js",
+    "./bridge": "./src/bridge.js",
+    "./core": "./src/core.js",
+    "./always-on": "./src/alwayson/runtime.js",
+    "./always-on/sidecar": "./src/alwayson/sidecar/engine.js",
+    "./adapters/contract": "./src/adapters/contract.js",
+    "./adapters/example": "./src/adapters/example.js",
+    "./adapters/hermes": "./src/adapters/hermes.js",
+    "./adapters/prompt": "./src/adapters/prompt.js",
+    "./adapters/generic": "./src/adapters/generic.js"
+  },
+  "files": [
+    "desktop",
+    "src",
+    "scripts/*.py",
+    "scripts/build.js",
+    "skills",
+    "plugin.yaml",
+    "__init__.py",
+    "README.md",
+    "ARCHITECTURE.md",
+    "SECURITY.md",
+    "docs",
+    "LICENSE",
+    "examples"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "live voice agent",
+    "live agent",
+    "voice assistant",
+    "always on voice",
+    "barge in",
+    "wake word",
+    "stt",
+    "tts",
+    "agent harness",
+    "hermes",
+    "paseo",
+    "codex cli",
+    "claude code",
+    "orca",
+    "coding agent",
+    "voice orchestration"
+  ],
+  "bin": {
+    "live-voice-agent": "./src/cli.js"
+  }
+}

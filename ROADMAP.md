@@ -9,9 +9,12 @@
 
 ## v0.2 — Always-on layer (in tree)
 
-- `createAlwaysOn()` supervisor over `VoiceCore` (`hermes-live-voice/always-on`)
+- `createAlwaysOn()` supervisor over `VoiceCore` (`live-voice-agent/always-on`)
 - five engine contracts: AudioSource, WakewordEngine, VadEngine, STTEngine, TTSEngine
-- JSONL sidecar protocol + JS client (`hermes-live-voice/always-on/sidecar`)
+- JSONL sidecar protocol + JS client (`live-voice-agent/always-on/sidecar`)
+- `createPromptAdapter({ ask })` so any agent can speak without a harness SDK
+- `npx live-voice-agent demo` typed always-on loop
+- planned Paseo / Codex CLI / Claude Code / Orca adapters that refuse fake seams
 - fake-engine state-machine tests and protocol conformance tests
 - examples under `examples/`
 

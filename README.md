@@ -1,24 +1,24 @@
-# Agent Voice Bridge — Voice Orchestration for Agent Harnesses
+# Live Voice Agent
 
 [![CI](https://github.com/davidjdseo/hermes-live-voice/actions/workflows/ci.yml/badge.svg)](https://github.com/davidjdseo/hermes-live-voice/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/davidjdseo/hermes-live-voice/blob/main/LICENSE)
 
-Agent Voice Bridge is a dependency-free, attachable voice-agent bridge for
-session ownership, spoken turns, TTS/STT handoff, and barge-in semantics across
-coding-agent harnesses. The repository slug remains `hermes-live-voice` because
-Hermes is the first and only real adapter in v0.1; the generic bridge and
-adapter contract are ready for future public seams.
+A live spoken assistant loop you can attach to any agent harness.
+Hermes is one adapter. Paseo, Codex CLI, Claude Code, and Orca plug in
+through the same six-method contract when they expose a public voice seam.
 
-Here, “full-duplex” describes orchestration of overlapping turn states and
-barge-in behavior. This project does not provide true acoustic AEC or native
-simultaneous model audio. The v0.1 bridge is a building block. The optional
-`always-on` layer in this package adds a local wake → listen → speak loop on
-top of the same `VoiceCore`, still without owning models, API keys, or OAuth.
+```bash
+npx live-voice-agent demo
+```
 
-It is not a new STT/TTS model, an always-listening service, or a claim that
-every listed harness currently exposes microphone or TTS APIs. Unsupported
-harnesses are clearly marked as planned or community targets in
-[docs/INTEGRATIONS.md](docs/INTEGRATIONS.md).
+Type a line. Hear a spoken-style reply. No API key, no microphone required
+for the demo. Swap `ask()` for your agent when you want the real brain.
+
+The GitHub slug is still `hermes-live-voice` until the repository is
+renamed. The npm package name is `live-voice-agent`.
+
+This is not a new STT/TTS model and not a claim that every listed harness
+already has a native microphone. Planned adapters refuse to pretend.
 
 ## Inspired by GPT Live-style interaction
 
@@ -28,7 +28,7 @@ Advanced Voice Mode and the
 as well as the broader “GPT Live” idea: natural low-latency spoken turns,
 interruptions, and conversational flow.
 
-That is inspiration, not affiliation or endorsement. Hermes Live Voice does
+That is inspiration, not affiliation or endorsement. This project does
 not claim OpenAI protocol or API compatibility and does not use an OpenAI
 realtime model.
 
@@ -46,8 +46,9 @@ An agent harness only needs six capabilities for an adapter:
 | Target | Status | Boundary |
 | --- | --- | --- |
 | Generic `createVoiceBridge` | Implemented | Reusable VoiceCore construction, event dispatch, session ownership, and lifecycle. |
-| Hermes Agent | Implemented | v0.1 production adapter using public RPCs and `RpcEvent`. |
-| Paseo, Codex CLI, Claude Code, Orca | Planned / contract-ready | Adapter templates only; see the truthful public-seam matrix. |
+| `createPromptAdapter` | Implemented | Drop in `ask(text)` and the loop speaks. No keys in this library. |
+| Hermes Agent | Implemented | Production adapter using public RPCs and `RpcEvent`. Optional. |
+| Paseo, Codex CLI, Claude Code, Orca | Planned | Factories exist and throw until a public mic/TTS/session seam is verified. |
 
 The adapter contract and authoring rules are in
 [docs/ADAPTERS.md](docs/ADAPTERS.md). A copy-paste starting point is
@@ -74,10 +75,25 @@ const adapter = createExampleAdapter({
 The snippet is a contract-shaped pseudo-integration: it does not claim that
 any listed future harness currently exposes those public methods.
 
-The package entry point is the bridge itself:
+The package entry point is the always-on loop:
 
 ```js
-import { createVoiceBridge } from 'hermes-live-voice'
+import { createAlwaysOn } from 'live-voice-agent/always-on'
+import { createPromptAdapter } from 'live-voice-agent/adapters/prompt'
+
+const assistant = createAlwaysOn({
+  engines,
+  backend: createPromptAdapter({
+    ask: async (text) => yourAgent(text),
+  }),
+})
+await assistant.start()
+```
+
+The older bridge entry still works:
+
+```js
+import { createVoiceBridge } from 'live-voice-agent'
 
 const bridge = createVoiceBridge(adapter)
 await bridge.start(sessionId)
@@ -97,7 +113,7 @@ engines (openWakeWord, faster-whisper, kokoro-onnx) live in a Python sidecar
 that you opt into.
 
 ```js
-import { createAlwaysOn } from 'hermes-live-voice/always-on'
+import { createAlwaysOn } from 'live-voice-agent/always-on'
 
 const assistant = createAlwaysOn({ engines, backend })
 assistant.on('wake', () => {})
@@ -107,7 +123,7 @@ await assistant.start()
 ```
 
 Custom engines are the supported path today. A sidecar client
-(`hermes-live-voice/always-on/sidecar`) speaks JSONL over stdio; the
+(`live-voice-agent/always-on/sidecar`) speaks JSONL over stdio; the
 reference Python engine is not shipped in this tag. Design notes:
 [docs/ALWAYS_ON_DESIGN.md](docs/ALWAYS_ON_DESIGN.md). Copy-paste examples:
 [`examples/always-on-custom.js`](examples/always-on-custom.js),
