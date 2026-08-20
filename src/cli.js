@@ -11,12 +11,13 @@ function usage() {
 
 Usage:
   npx live-voice-agent demo
-  npx live-voice-agent live [--brain echo|codex|claude|paseo]
+  npx live-voice-agent live [--brain echo|codex|claude|opencode|gemini|paseo|openai|openrouter|orca]
+  npx live-voice-agent live --stt voicebox|whisper-cli|openai|groq|elevenlabs|deepgram
   npx live-voice-agent doctor
 
 demo   typed loop, no microphone
 live   microphone + macOS say. Enter also triggers a turn.
-doctor checks ffmpeg, say, node, and optional agent CLIs
+doctor checks ffmpeg, say, node, Voicebox, and optional agent CLIs
 
 Wake phrases: 헤이 자비스, 헤이 자스비, hey jarvis
 Hermes is one optional adapter, not the product.`)
@@ -141,7 +142,8 @@ async function demo(argv) {
 async function live(argv) {
   const log = message => console.log(message)
   const brain = parseFlag(argv, '--brain', 'echo')
-  const engines = createLocalEngines({ keyword: 'hey jarvis' })
+  const stt = parseFlag(argv, '--stt', process.env.LIVE_VOICE_STT || 'silence')
+  const engines = createLocalEngines({ keyword: 'hey jarvis', stt })
   const backend = createAgentBackend({ brain, agentId: parseFlag(argv, '--agent') })
   const assistant = createAlwaysOn({ engines, backend, maxUtteranceMs: 20000, preRollMs: 1500, sampleRate: 16000 })
   await attachAssistant(assistant, log)
@@ -171,8 +173,12 @@ function doctor() {
     ['say', which('say') || 'MISSING — macOS TTS'],
     ['codex', which('codex') || 'optional'],
     ['claude', which('claude') || 'optional'],
+    ['opencode', which('opencode') || 'optional'],
+    ['gemini', which('gemini') || 'optional'],
     ['paseo', which('paseo') || 'optional'],
     ['orca', which('orca') || 'optional'],
+    ['whisper', which('whisper-cli') || which('whisper') || 'optional local STT'],
+    ['voicebox', process.env.LIVE_VOICE_VOICEBOX_URL || 'http://127.0.0.1:17493'],
   ]
   for (const [name, value] of rows) console.log(`${name.padEnd(8)} ${value}`)
   if (!which('ffmpeg')) process.exitCode = 1

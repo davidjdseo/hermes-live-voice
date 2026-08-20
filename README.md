@@ -14,10 +14,11 @@ npx live-voice-agent live
 
 `demo` is typed. `live` uses the Mac microphone and `say`.
 Press Enter for push-to-talk if the wake word engine is not installed.
-Swap the brain with `--brain codex` or `--brain claude`.
+Swap the brain with `--brain opencode` or `--brain claude`.
+Swap STT with `--stt voicebox` if Voicebox is running locally.
 
-This is not a new STT/TTS model. Local live mode uses energy VAD +
-macOS `say`. Real ASR is still an engine you plug in.
+This is not a new STT/TTS model. Local live mode can use Voicebox MLX Whisper,
+Groq, ElevenLabs Scribe, Deepgram nova-3, or whisper-cli. See [docs/STT.md](docs/STT.md).
 
 ## Inspired by GPT Live-style interaction
 
@@ -47,9 +48,11 @@ An agent harness only needs six capabilities for an adapter:
 | Generic `createVoiceBridge` | Implemented | Reusable VoiceCore construction, event dispatch, session ownership, and lifecycle. |
 | `createPromptAdapter` | Implemented | Drop in `ask(text)` and the loop speaks. No keys in this library. |
 | Local mic + `say` | Implemented | `npx live-voice-agent live`. Energy VAD, push-to-talk, macOS TTS. |
-| Codex CLI / Claude Code / Paseo | Implemented as brains | Prompt/session CLI seams via `--brain`. Not native mic/TTS of those apps. |
+| Codex / Claude / OpenCode / Gemini / Paseo | Implemented as brains | Official CLI prompt seams via `--brain`. Not native mic/TTS of those apps. |
+| OpenAI / OpenRouter | Implemented | Official `POST /v1/chat/completions`. |
+| Orca | Implemented as CLI brain | `orca terminal send` or `orca worktree create --agent --prompt`. No native Orca mic API. |
 | Hermes Agent | Implemented | Production adapter using public RPCs and `RpcEvent`. Optional. |
-| Orca | Planned | Session lifecycle exists; no public prompt+event voice seam yet. |
+| ACP / A2A / AG-UI | Helpers | Thin JSON-RPC client, Agent Card, event mapping. Not full runtimes. |
 
 The adapter contract and authoring rules are in
 [docs/ADAPTERS.md](docs/ADAPTERS.md). A copy-paste starting point is

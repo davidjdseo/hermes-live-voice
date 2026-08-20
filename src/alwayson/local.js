@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import { ERROR_CODES } from './engines.js'
+import { createSttEngine, createSilenceStt } from './stt.js'
 
 function pendingQueue() {
   const items = []
@@ -178,40 +179,6 @@ export function createAlwaysListenWake() {
   }
 }
 
-export function createSilenceStt({
-  minSpeechMs = 250,
-  endSilenceMs = 700,
-  speechRms = 0.018,
-} = {}) {
-  return {
-    transcribe(audio) {
-      return (async function* () {
-        let started = false
-        let speechMs = 0
-        let silenceMs = 0
-        let frames = 0
-        for await (const chunk of audio) {
-          frames++
-          const duration = (chunk.pcm?.length ?? 0) * 1000 / (chunk.sampleRate || 16000)
-          const level = rms(chunk.pcm)
-          if (level >= speechRms) {
-            started = true
-            speechMs += duration
-            silenceMs = 0
-          } else if (started) {
-            silenceMs += duration
-            if (silenceMs >= endSilenceMs && speechMs >= minSpeechMs) {
-              yield { type: 'final', text: '말했어', confidence: 0.4, frames }
-              return
-            }
-          }
-        }
-        if (started && speechMs >= minSpeechMs) yield { type: 'final', text: '말했어', confidence: 0.3, frames }
-      })()
-    },
-  }
-}
-
 export function createSayTts({ voice = process.env.LIVE_VOICE_VOICE || 'Yuna' } = {}) {
   let child = null
   return {
@@ -252,8 +219,10 @@ export function createLocalEngines(options = {}) {
     source: createMicSource(options),
     wakeword: wake,
     vad: createEnergyVad(options),
-    stt: createSilenceStt(options),
+    stt: createSttEngine(options.stt || process.env.LIVE_VOICE_STT, options),
     tts: createSayTts(options),
     triggerWake: extra => wake.trigger?.(extra),
   }
 }
+
+export { createSilenceStt }

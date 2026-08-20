@@ -2,30 +2,26 @@
 
 ## v0.1
 
-- Hermes Agent v0.20.4 public RPC adapter
+- Hermes Agent public RPC adapter
 - portable marker protocol and harness-neutral core
-- Agent Voice Bridge package entrypoint with reusable lifecycle/event dispatch
-- deterministic session, echo, interruption, and re-arm tests
 
-## v0.2 — Always-on layer
+## v0.2 — Always-on loop
 
-- `createAlwaysOn()` supervisor over `VoiceCore`
-- five engine contracts plus local mic/`say` engines
-- JSONL sidecar protocol + JS client
-- `createPromptAdapter({ ask })` and CLI brains (echo, Codex, Claude, Paseo)
+- `createAlwaysOn()`, local mic/`say`, 헤이 자비스
 - `npx live-voice-agent demo|live|doctor`
-- wake phrase: 헤이 자비스 / hey jarvis
-- Orca remains planned: no public prompt+event voice seam yet
 
-Not in this tag: a shipped Python ONNX engine, AEC, speech-to-speech
-passthrough, or barge-in on loudspeakers.
+## v0.3 — Clients, STT, protocols (this tag)
+
+- Brains: echo, Codex, Claude Code, OpenCode, Gemini CLI, Paseo, OpenAI, OpenRouter, Orca CLI, ACP
+- STT: silence, Voicebox, whisper-cli, OpenAI, Groq, ElevenLabs Scribe, Deepgram nova-3
+- Protocol helpers: OpenAI chat/transcriptions, ACP JSON-RPC, A2A Agent Card, AG-UI events
+- MCP stays inside those CLIs. This package does not host MCP.
 
 ## Later, only with a real public seam
 
-- Orca adapter if a public session prompt+event API lands
-- measured speech-duration calibration
-- accessibility review of the native pane
-- optional openWakeWord `hey_jarvis` sidecar
-
-No IDE integration, remote audio service, new model, or framework is planned
-without a concrete supported API and a testable user need.
+- Full ACP editor host
+- Full A2A mesh runtime
+- Full AG-UI frontend
+- Bundled Moonshine / Parakeet / SenseVoice weights
+- AEC and loudspeaker barge-in
+- npm publish (blocked here by missing npm login)
