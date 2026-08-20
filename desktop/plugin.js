@@ -36,7 +36,11 @@ export class VoiceCore {
   voiceStatus(sessionId, state) { if (!this.belongs(sessionId)) return { ignored: true }; if (this.wakeAcknowledgementPending && this.rearmTimer !== null) return { ignored: false }; if (['idle', 'ready', 'stopped', 'complete', 'done'].includes(String(state).toLowerCase())) { this.status(PHASES.IDLE); this.ensureIdleRearm(); } return { ignored: false }; }
   acceptTranscript(sessionId, raw) {
     if (!this.belongs(sessionId)) return { accepted: false, ignored: true, reason: 'session mismatch' }; const text = String(raw ?? '').trim(), n = normalizeTranscript(text), choice = choiceOf(text);
-    if (!meaningful(text) && !(this.afterReply && choice)) return this.reject('filler/noise'); if (this.lastSpoken && ttsEchoSimilarity(text, this.lastSpoken) >= 0.86) return this.reject('tts echo');
+    if (!meaningful(text) && !(this.afterReply && choice)) return this.reject('filler/noise');
+    // TTS echo: reject if transcript is similar to last spoken text (fuzzy, Korean-aware)
+    if (this.lastSpoken && ttsEchoSimilarity(text, this.lastSpoken) >= 0.72) return this.reject('tts echo');
+    // TTS echo: reject if transcript contains a significant substring of last spoken text (handles Whisper misrecognition)
+    if (this.lastSpoken) { const spoken = normalizeTranscript(this.lastSpoken).replaceAll(' ', ''), heard = n.replaceAll(' ', ''); if (spoken.length >= 4 && heard.length >= 4 && (spoken.includes(heard) || heard.includes(spoken))) return this.reject('tts echo substring'); }
     const wake = /^(?:헤이\s*헤르메스(?=\s|$)|hey\s+hermes\b)\s*/i, hadWake = wake.test(text), command = text.replace(wake, '').trim(); if (hadWake && !command) return this.wake(sessionId);
     if (this.phase === PHASES.THINKING || this.phase === PHASES.SPEAKING) return meaningful(text) ? this.submit(text, true) : this.reject('filler/noise');
     if (this.afterReply && !hadWake) { if (CONTINUE.has(n) || (choice && this.lastQuestionChoices.has(choice))) return this.submit(text, false); return this.reject('not armed: continue cue or matching choice required'); }
@@ -80,6 +84,97 @@ export function createHermesAdapter(host) {
   })
 }
 
+
+
+
+export const BRIDGE_EVENTS = Object.freeze([
+  'voice.transcript',
+  'voice.status',
+  'wake.detected',
+  'message.start',
+  'message.delta',
+  'message.interim',
+  'message.complete',
+  'voice.interrupted'
+])
+
+export function createVoiceBridge(adapter, { onStatus = () => {}, onError = () => {}, ...coreOptions } = {}) {
+  assertAgentHarnessAdapter(adapter)
+  let disposed = false
+  let voiceEnabled = false
+  const listeners = []
+  const invoke = (method, label, ...args) => {
+    try {
+      return Promise.resolve(adapter[method](...args)).catch(error => { onError(error, label); return undefined })
+    } catch (error) {
+      onError(error, label)
+      return Promise.resolve(undefined)
+    }
+  }
+  const core = new VoiceCore({
+    ...coreOptions,
+    onRecord: (action, sessionId) => void invoke('record', `voice.record ${action}`, action, sessionId),
+    onSpeak: text => void invoke('speak', 'voice.tts', text),
+    onSubmit: payload => void invoke('submit', 'prompt.submit', payload),
+    onStatus
+  })
+  const dispatch = (type, item) => {
+    if (disposed || !ownsSession(item, core.sessionId)) return { ignored: true }
+    const payload = item.payload ?? {}
+    switch (type) {
+      case 'voice.transcript': return core.acceptTranscript(item.sessionId, payload.text ?? '')
+      case 'voice.status': return core.voiceStatus(item.sessionId, payload.state)
+      case 'wake.detected': return core.wake(item.sessionId)
+      case 'message.start': return core.messageStart(item.sessionId, payload)
+      case 'message.delta': return core.messageDelta(item.sessionId, payload.delta ?? payload.text ?? '')
+      case 'message.interim': return core.messageInterim(item.sessionId, payload.text ?? payload.interim ?? '')
+      case 'message.complete': return core.messageComplete(item.sessionId, payload)
+      case 'voice.interrupted': {
+        const text = payload.text ?? payload.transcript ?? ''
+        return text ? core.acceptTranscript(item.sessionId, text) : { accepted: false, ignored: true, reason: 'empty interruption' }
+      }
+      default: return { ignored: true }
+    }
+  }
+  for (const type of BRIDGE_EVENTS) {
+    const dispose = adapter.subscribe(type, item => dispatch(type, item))
+    if (typeof dispose === 'function') listeners.push(dispose)
+  }
+  const start = async (sessionId = adapter.getSessionId()) => {
+    if (disposed) throw new Error('Voice bridge is disposed')
+    if (!sessionId) throw new Error('A focused session is required to start voice')
+    await adapter.toggle('on')
+    voiceEnabled = true
+    core.start(sessionId)
+    return true
+  }
+  const stop = async () => {
+    if (disposed) return false
+    core.stop()
+    if (!voiceEnabled) return true
+    try {
+      await adapter.toggle('off')
+    } finally {
+      voiceEnabled = false
+    }
+    return true
+  }
+  const dispose = async () => {
+    if (disposed) return false
+    disposed = true
+    listeners.splice(0).forEach(disposeListener => disposeListener?.())
+    core.dispose()
+    if (!voiceEnabled) return true
+    try {
+      await adapter.toggle('off')
+    } finally {
+      voiceEnabled = false
+    }
+    return true
+  }
+  return { core, controller: core, get phase() { return core.phase }, start, stop, dispose, dispatch }
+}
+
 export async function startVoiceSession(adapter, controller, sessionId) {
   await adapter.toggle('on');
   controller.start(sessionId);
@@ -98,21 +193,13 @@ function Chip({ state, toggle }) { const value = useValue(state); return jsx('bu
 
 export default { id: ID, name: 'Hermes Live Voice', defaultEnabled: true, register(ctx) {
   globalThis[RUNTIME_KEY]?.dispose?.()
-  const state = atom({ phase: 'off', accepted: '', rejection: '' }), listeners = [], adapter = createHermesAdapter(host)
+  const state = atom({ phase: 'off', accepted: '', rejection: '' }), adapter = createHermesAdapter(host)
   const update = next => state.set({ phase: next.phase, accepted: next.accepted ?? '', rejection: next.rejection ?? '' })
-  const safe = (operation, label) => Promise.resolve().then(operation).catch(error => { const message = `${label} failed: ${error?.message ?? error}`; update({ phase: controller?.phase ?? 'off', rejection: message }); host.notify({ kind: 'warning', message }); })
-  const controller = new VoiceCore({ onRecord: (action, sid) => void safe(() => adapter.record(action, sid), `voice.record ${action}`), onSpeak: text => void safe(() => adapter.speak(text), 'voice.tts'), onSubmit: payload => void safe(() => adapter.submit(payload), 'prompt.submit'), onStatus: update })
-  const bind = (name, handler) => listeners.push(adapter.subscribe(name, item => { if (ownsSession(item, controller.sessionId)) handler(item) }))
-  bind('voice.transcript', ({ sessionId, payload }) => controller.acceptTranscript(sessionId, payload.text ?? ''))
-  bind('voice.status', ({ sessionId, payload }) => controller.voiceStatus(sessionId, payload.state))
-  bind('wake.detected', ({ sessionId }) => controller.wake(sessionId))
-  bind('message.start', ({ sessionId, payload }) => controller.messageStart(sessionId, payload))
-  bind('message.delta', ({ sessionId, payload }) => controller.messageDelta(sessionId, payload.delta ?? payload.text ?? ''))
-  bind('message.interim', ({ sessionId, payload }) => controller.messageInterim(sessionId, payload.text ?? payload.interim ?? ''))
-  bind('message.complete', ({ sessionId, payload }) => controller.messageComplete(sessionId, payload))
-  bind('voice.interrupted', ({ sessionId, payload }) => { const text = payload.text ?? payload.transcript ?? ''; if (text) controller.acceptTranscript(sessionId, text) })
-  const toggle = action => { const sid = adapter.getSessionId(); if (action === 'on' && !sid) return host.notify({ kind: 'warning', message: 'Select a Hermes session first.' }); if (action === 'on') return startVoiceSession(adapter, controller, sid).catch(error => { update({ phase: controller.phase, rejection: `voice.toggle on failed: ${error?.message ?? error}` }); host.notify({ kind: 'warning', message: `voice.toggle on failed: ${error?.message ?? error}` }) }); return stopVoiceSession(adapter, controller).catch(error => { update({ phase: controller.phase, rejection: `voice.toggle off failed: ${error?.message ?? error}` }); host.notify({ kind: 'warning', message: `voice.toggle off failed: ${error?.message ?? error}` }) }) }
-  const runtime = { dispose: () => { listeners.splice(0).forEach(dispose => dispose?.()); controller.dispose(); void Promise.resolve().then(() => adapter.toggle('off')).catch(error => host.notify({ kind: 'warning', message: `voice.toggle off failed: ${error?.message ?? error}` })); if (globalThis[RUNTIME_KEY] === runtime) delete globalThis[RUNTIME_KEY] } }
+  let controller
+  const bridge = createVoiceBridge(adapter, { onStatus: update, onError: (error, label) => { const message = `${label} failed: ${error?.message ?? error}`; update({ phase: controller?.phase ?? 'off', rejection: message }); host.notify({ kind: 'warning', message }) } })
+  controller = bridge.controller
+  const toggle = action => { const sid = adapter.getSessionId(); if (action === 'on' && !sid) return host.notify({ kind: 'warning', message: 'Select a Hermes session first.' }); const operation = action === 'on' ? bridge.start(sid) : bridge.stop(); return operation.catch(error => { const message = `voice.toggle ${action} failed: ${error?.message ?? error}`; update({ phase: controller.phase, rejection: message }); host.notify({ kind: 'warning', message }) }) }
+  const runtime = { dispose: () => { void bridge.dispose().catch(error => host.notify({ kind: 'warning', message: `voice.toggle off failed: ${error?.message ?? error}` })); if (globalThis[RUNTIME_KEY] === runtime) delete globalThis[RUNTIME_KEY] } }
   globalThis[RUNTIME_KEY] = runtime
   ctx.register({ id: 'pane', area: 'panes', title: 'live voice', data: { placement: 'right', width: '260px' }, render: () => jsx(Pane, { state, toggle }) })
   ctx.register({ id: 'status', area: 'statusBar.right', order: 120, render: () => jsx(Chip, { state, toggle }) })
