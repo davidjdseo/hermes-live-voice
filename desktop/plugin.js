@@ -3,7 +3,7 @@ import { atom, Button, host, useValue } from '@hermes/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 export const PHASES = Object.freeze({ OFF: 'off', IDLE: 'idle', LISTENING: 'listening', THINKING: 'thinking', SPEAKING: 'speaking' });
 const VOICE_RE = /<<<VOICE\s*([\s\S]*?)\s*VOICE>>>/g;
-const CONTINUE = new Set(['진행해', '진행해 헤르메스', 'proceed', 'continue', 'go on', 'go']);
+const CONTINUE = new Set(['진행해', '진행해 자비스', '진행해 헤르메스', 'proceed', 'continue', 'go on', 'go']);
 const FILLERS = new Set(['음', '어', '아', '흠', 'um', 'uh', 'erm', 'hmm', 'okay', 'ok', '네', '응']);
 
 export function normalizeTranscript(value) { return String(value ?? '').normalize('NFKC').toLowerCase().replace(/[“”"'`.,!?;:()[\]{}<>]/g, ' ').replace(/\s+/g, ' ').trim(); }
@@ -41,7 +41,7 @@ export class VoiceCore {
     if (this.lastSpoken && ttsEchoSimilarity(text, this.lastSpoken) >= 0.72) return this.reject('tts echo');
     // TTS echo: reject if transcript contains a significant substring of last spoken text (handles Whisper misrecognition)
     if (this.lastSpoken) { const spoken = normalizeTranscript(this.lastSpoken).replaceAll(' ', ''), heard = n.replaceAll(' ', ''); if (spoken.length >= 4 && heard.length >= 4 && (spoken.includes(heard) || heard.includes(spoken))) return this.reject('tts echo substring'); }
-    const wake = /^(?:헤이\s*헤르메스(?=\s|$)|hey\s+hermes\b)\s*/i, hadWake = wake.test(text), command = text.replace(wake, '').trim(); if (hadWake && !command) return this.wake(sessionId);
+    const wake = /^(?:헤이\s*(?:자비스|자스비|jarvis|헤르메스)(?=\s|$)|hey\s+(?:jarvis|hermes)\b)\s*/i, hadWake = wake.test(text), command = text.replace(wake, '').trim(); if (hadWake && !command) return this.wake(sessionId);
     if (this.phase === PHASES.THINKING || this.phase === PHASES.SPEAKING) return meaningful(text) ? this.submit(text, true) : this.reject('filler/noise');
     if (this.afterReply && !hadWake) { if (CONTINUE.has(n) || (choice && this.lastQuestionChoices.has(choice))) return this.submit(text, false); return this.reject('not armed: continue cue or matching choice required'); }
     if (!this.armed && !hadWake) return this.reject('not armed'); return command ? this.submit(command, false) : this.reject('empty command');
@@ -188,10 +188,10 @@ export async function stopVoiceSession(adapter, controller) {
 
 const ID = 'hermes-live-voice'
 const RUNTIME_KEY = '__hermes_live_voice_runtime__'
-function Pane({ state, toggle }) { const value = useValue(state); return jsxs('div', { className: 'flex h-full flex-col gap-2 p-3 text-sm', children: [jsx('div', { className: 'font-medium', children: 'Hermes Live Voice' }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: `phase: ${value.phase}` }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: value.accepted ? `accepted: ${value.accepted}` : 'accepted: —' }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: value.rejection ? `rejected: ${value.rejection}` : 'rejection: —' }), jsxs('div', { className: 'flex gap-2', children: [jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => toggle('on'), children: 'Start' }), jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => toggle('off'), children: 'Stop' })] })] }) }
+function Pane({ state, toggle }) { const value = useValue(state); return jsxs('div', { className: 'flex h-full flex-col gap-2 p-3 text-sm', children: [jsx('div', { className: 'font-medium', children: 'Live Voice Agent' }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: `phase: ${value.phase}` }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: value.accepted ? `accepted: ${value.accepted}` : 'accepted: —' }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: value.rejection ? `rejected: ${value.rejection}` : 'rejection: —' }), jsxs('div', { className: 'flex gap-2', children: [jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => toggle('on'), children: 'Start' }), jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => toggle('off'), children: 'Stop' })] })] }) }
 function Chip({ state, toggle }) { const value = useValue(state); return jsx('button', { type: 'button', className: 'px-1.5 text-[0.6875rem] text-(--ui-text-tertiary)', onClick: () => toggle(value.phase === 'off' ? 'on' : 'off'), children: `voice:${value.phase}` }) }
 
-export default { id: ID, name: 'Hermes Live Voice', defaultEnabled: true, register(ctx) {
+export default { id: ID, name: 'Live Voice Agent', defaultEnabled: true, register(ctx) {
   globalThis[RUNTIME_KEY]?.dispose?.()
   const state = atom({ phase: 'off', accepted: '', rejection: '' }), adapter = createHermesAdapter(host)
   const update = next => state.set({ phase: next.phase, accepted: next.accepted ?? '', rejection: next.rejection ?? '' })

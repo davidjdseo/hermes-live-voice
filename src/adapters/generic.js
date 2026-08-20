@@ -1,47 +1,34 @@
-import { assertAgentHarnessAdapter } from './contract.js'
+import { createPromptAdapter } from './prompt.js'
+import { createBrainAsk } from './cli-agents.js'
 
 /**
- * Planned harness adapters. Each factory documents the public seam it needs.
- * None of these claim a native microphone or TTS API exists today.
+ * Harness adapters for always-on. Capture and TTS stay in the local engines.
+ * These adapters only need a public prompt/session seam.
  */
-function planned(name, notes) {
-  const error = () => {
-    throw new Error(`${name} adapter is planned. ${notes}`)
-  }
-  return assertAgentHarnessAdapter({
-    getSessionId: () => null,
-    toggle: error,
-    record: error,
-    speak: error,
-    submit: error,
-    subscribe: () => () => {},
+export function createPaseoAdapter({ agentId, ask } = {}) {
+  const id = agentId || process.env.LIVE_VOICE_PASEO_AGENT
+  return createPromptAdapter({
+    sessionId: id || 'paseo',
+    ask: ask || createBrainAsk('paseo', { agentId: id }),
   })
 }
 
-export function createPaseoAdapter() {
-  return planned(
-    'Paseo',
-    'Needs a public plugin RPC that can start/stop capture, speak text, and submit to one session. See docs/INTEGRATIONS.md.',
-  )
+export function createCodexAdapter({ ask, model } = {}) {
+  return createPromptAdapter({
+    sessionId: 'codex',
+    ask: ask || createBrainAsk('codex', { model }),
+  })
 }
 
-export function createCodexAdapter() {
-  return planned(
-    'Codex CLI',
-    'Needs a public session/event/audio seam. Codex plugins and MCP are not that seam yet.',
-  )
-}
-
-export function createClaudeCodeAdapter() {
-  return planned(
-    'Claude Code',
-    'Needs native mic/TTS plus a focused session id. Skills/hooks/MCP are not enough.',
-  )
+export function createClaudeCodeAdapter({ ask } = {}) {
+  return createPromptAdapter({
+    sessionId: 'claude',
+    ask: ask || createBrainAsk('claude'),
+  })
 }
 
 export function createOrcaAdapter() {
-  return planned(
-    'Orca',
-    'Needs a public voice/audio seam on top of agent session lifecycle.',
+  throw new Error(
+    'Orca has session lifecycle commands, but no public per-session prompt+event voice seam yet. Use createPromptAdapter({ ask }) or createCodexAdapter / createClaudeCodeAdapter.',
   )
 }

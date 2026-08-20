@@ -1,7 +1,7 @@
-name: hermes-live-voice
-version: "0.1.0"
-description: "Agent Voice Bridge desktop adapter for Hermes Agent v0.20.4 using the existing local voice engine."
-author: "Hermes Live Voice contributors"
+name: live-voice-agent
+version: "0.2.0"
+description: "Always-on spoken assistant. Wake with 헤이 자비스. Hermes is an optional adapter."
+author: "Live Voice Agent contributors"
 kind: standalone
 desktop: desktop/plugin.js
 skills:

@@ -1,18 +1,25 @@
 #!/usr/bin/env node
 import { createInterface } from 'node:readline'
+import { spawnSync } from 'node:child_process'
 import { createAlwaysOn } from './alwayson/runtime.js'
-import { createPromptAdapter } from './adapters/prompt.js'
+import { createLocalEngines } from './alwayson/local.js'
+import { createAgentBackend } from './adapters/cli-agents.js'
 import { ERROR_CODES } from './alwayson/engines.js'
 
 function usage() {
-  console.log(`live-voice-agent — spoken loop for any agent backend
+  console.log(`live-voice-agent — always-on spoken assistant. Wake: 헤이 자비스
 
 Usage:
   npx live-voice-agent demo
+  npx live-voice-agent live [--brain echo|codex|claude|paseo]
+  npx live-voice-agent doctor
 
-Type a line, get a spoken-style reply. No microphone, no API keys.
-Swap createPromptAdapter({ ask }) for Hermes, Paseo, Codex, Claude Code,
-or Orca when that harness exposes the six adapter methods.`)
+demo   typed loop, no microphone
+live   microphone + macOS say. Enter also triggers a turn.
+doctor checks ffmpeg, say, node, and optional agent CLIs
+
+Wake phrases: 헤이 자비스, 헤이 자스비, hey jarvis
+Hermes is one optional adapter, not the product.`)
 }
 
 function pending() {
@@ -53,7 +60,6 @@ function createDemoEngines({ log }) {
   const wake = pending()
   const vad = pending()
   let nextUtterance = 'hello'
-
   return {
     source: {
       async start() { log('ready (typed input)') },
@@ -81,36 +87,41 @@ function createDemoEngines({ log }) {
     },
     say(text) {
       nextUtterance = text
-      wake.push({ keyword: 'hey', score: 1, ts: Date.now() })
+      wake.push({ keyword: 'hey jarvis', score: 1, ts: Date.now() })
     },
   }
 }
 
-async function demo() {
-  const log = message => console.log(message)
-  const engines = createDemoEngines({ log })
-  const backend = createPromptAdapter({
-    sessionId: 'demo',
-    ask: async text => `들었어. ${text}`,
-  })
-  const assistant = createAlwaysOn({
-    engines,
-    backend,
-    maxUtteranceMs: 8000,
-    preRollMs: 10,
-    sampleRate: 16000,
-  })
-  assistant.on('wake', () => log('[wake]'))
+function parseFlag(argv, name, fallback) {
+  const index = argv.indexOf(name)
+  if (index >= 0) return argv[index + 1] ?? fallback
+  return fallback
+}
+
+function which(bin) {
+  const result = spawnSync('which', [bin], { encoding: 'utf8' })
+  return result.status === 0 ? result.stdout.trim() : ''
+}
+
+async function attachAssistant(assistant, log) {
+  assistant.on('wake', event => log(`[wake] ${event?.keyword ?? 'hey jarvis'}`))
   assistant.on('utterance', text => log(`you: ${text}`))
   assistant.on('interrupted', () => log('[interrupted]'))
   assistant.on('error', error => {
     if (error.code === ERROR_CODES.UTTERANCE_TIMEOUT) return
     log(`[error] ${error.code} ${error.message}`)
   })
+}
 
+async function demo(argv) {
+  const log = message => console.log(message)
+  const brain = parseFlag(argv, '--brain', 'echo')
+  const engines = createDemoEngines({ log })
+  const backend = createAgentBackend({ brain, agentId: parseFlag(argv, '--agent') })
+  const assistant = createAlwaysOn({ engines, backend, maxUtteranceMs: 8000, preRollMs: 10, sampleRate: 16000 })
+  await attachAssistant(assistant, log)
   await assistant.start()
-  log('Live Voice Agent demo. Type a line, Enter. /quit to exit.')
-
+  log('Live Voice Agent demo. Type a line, Enter. Wake is 헤이 자비스. /quit to exit.')
   const rl = createInterface({ input: process.stdin, output: process.stdout })
   rl.on('line', line => {
     const text = String(line ?? '').trim()
@@ -119,7 +130,7 @@ async function demo() {
       rl.close()
       return
     }
-    engines.say(text)
+    engines.say(text.startsWith('헤이') || /^hey /i.test(text) ? text : `헤이 자비스 ${text}`)
   })
   rl.on('close', async () => {
     await assistant.stop()
@@ -127,9 +138,52 @@ async function demo() {
   })
 }
 
+async function live(argv) {
+  const log = message => console.log(message)
+  const brain = parseFlag(argv, '--brain', 'echo')
+  const engines = createLocalEngines({ keyword: 'hey jarvis' })
+  const backend = createAgentBackend({ brain, agentId: parseFlag(argv, '--agent') })
+  const assistant = createAlwaysOn({ engines, backend, maxUtteranceMs: 20000, preRollMs: 1500, sampleRate: 16000 })
+  await attachAssistant(assistant, log)
+  log('Starting microphone capture. If this hangs, grant Terminal/ffmpeg microphone permission, then retry.')
+  await assistant.start()
+  log('Jarvis is listening. Say 헤이 자비스, or press Enter to push-to-talk. /quit to exit.')
+  const rl = createInterface({ input: process.stdin, output: process.stdout })
+  rl.on('line', line => {
+    const text = String(line ?? '').trim()
+    if (text === '/quit' || text === '/exit') {
+      rl.close()
+      return
+    }
+    engines.triggerWake?.({ keyword: 'hey jarvis' })
+    log('[ptt] listening')
+  })
+  rl.on('close', async () => {
+    await assistant.stop()
+    process.exit(0)
+  })
+}
+
+function doctor() {
+  const rows = [
+    ['node', process.version],
+    ['ffmpeg', which('ffmpeg') || 'MISSING — needed for live mic'],
+    ['say', which('say') || 'MISSING — macOS TTS'],
+    ['codex', which('codex') || 'optional'],
+    ['claude', which('claude') || 'optional'],
+    ['paseo', which('paseo') || 'optional'],
+    ['orca', which('orca') || 'optional'],
+  ]
+  for (const [name, value] of rows) console.log(`${name.padEnd(8)} ${value}`)
+  if (!which('ffmpeg')) process.exitCode = 1
+}
+
 const command = process.argv[2]
+const argv = process.argv.slice(2)
 if (!command || command === '-h' || command === '--help') usage()
-else if (command === 'demo') await demo()
+else if (command === 'demo') await demo(argv)
+else if (command === 'live') await live(argv)
+else if (command === 'doctor') doctor()
 else {
   usage()
   process.exit(1)

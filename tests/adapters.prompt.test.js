@@ -27,10 +27,13 @@ test('prompt adapter turns ask() into a spoken VoiceCore turn', async () => {
   await bridge.stop()
 })
 
-test('planned adapters refuse to pretend they have a voice seam', () => {
-  for (const factory of [createPaseoAdapter, createCodexAdapter, createClaudeCodeAdapter, createOrcaAdapter]) {
-    const adapter = factory()
-    assert.equal(adapter.getSessionId(), null)
-    assert.throws(() => adapter.toggle('on'), /planned/)
-  }
+test('codex, claude, and paseo adapters are prompt backends', () => {
+  const ask = async text => text
+  assert.equal(createCodexAdapter({ ask }).getSessionId(), 'codex')
+  assert.equal(createClaudeCodeAdapter({ ask }).getSessionId(), 'claude')
+  assert.equal(createPaseoAdapter({ ask, agentId: 'abc' }).getSessionId(), 'abc')
+})
+
+test('orca refuses a fake native voice seam', () => {
+  assert.throws(() => createOrcaAdapter(), /no public/)
 })

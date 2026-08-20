@@ -12,10 +12,10 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 
 const ID = 'hermes-live-voice'
 const RUNTIME_KEY = '__hermes_live_voice_runtime__'
-function Pane({ state, toggle }) { const value = useValue(state); return jsxs('div', { className: 'flex h-full flex-col gap-2 p-3 text-sm', children: [jsx('div', { className: 'font-medium', children: 'Hermes Live Voice' }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: `phase: ${value.phase}` }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: value.accepted ? `accepted: ${value.accepted}` : 'accepted: —' }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: value.rejection ? `rejected: ${value.rejection}` : 'rejection: —' }), jsxs('div', { className: 'flex gap-2', children: [jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => toggle('on'), children: 'Start' }), jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => toggle('off'), children: 'Stop' })] })] }) }
+function Pane({ state, toggle }) { const value = useValue(state); return jsxs('div', { className: 'flex h-full flex-col gap-2 p-3 text-sm', children: [jsx('div', { className: 'font-medium', children: 'Live Voice Agent' }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: `phase: ${value.phase}` }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: value.accepted ? `accepted: ${value.accepted}` : 'accepted: —' }), jsx('div', { className: 'text-(--ui-text-tertiary)', children: value.rejection ? `rejected: ${value.rejection}` : 'rejection: —' }), jsxs('div', { className: 'flex gap-2', children: [jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => toggle('on'), children: 'Start' }), jsx(Button, { size: 'sm', variant: 'secondary', onClick: () => toggle('off'), children: 'Stop' })] })] }) }
 function Chip({ state, toggle }) { const value = useValue(state); return jsx('button', { type: 'button', className: 'px-1.5 text-[0.6875rem] text-(--ui-text-tertiary)', onClick: () => toggle(value.phase === 'off' ? 'on' : 'off'), children: `voice:${value.phase}` }) }
 
-export default { id: ID, name: 'Hermes Live Voice', defaultEnabled: true, register(ctx) {
+export default { id: ID, name: 'Live Voice Agent', defaultEnabled: true, register(ctx) {
   globalThis[RUNTIME_KEY]?.dispose?.()
   const state = atom({ phase: 'off', accepted: '', rejection: '' }), adapter = createHermesAdapter(host)
   const update = next => state.set({ phase: next.phase, accepted: next.accepted ?? '', rejection: next.rejection ?? '' })

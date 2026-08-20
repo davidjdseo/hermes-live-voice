@@ -3,22 +3,21 @@
 [![CI](https://github.com/davidjdseo/live-voice-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/davidjdseo/live-voice-agent/actions/workflows/ci.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/davidjdseo/live-voice-agent/blob/main/LICENSE)
 
-A live spoken assistant loop you can attach to any agent harness.
-Hermes is one adapter. Paseo, Codex CLI, Claude Code, and Orca plug in
-through the same six-method contract when they expose a public voice seam.
+Always-on spoken assistant. Wake it with **헤이 자비스**.
+Hermes is one adapter, not the product.
 
 ```bash
+npx live-voice-agent doctor
 npx live-voice-agent demo
+npx live-voice-agent live
 ```
 
-Type a line. Hear a spoken-style reply. No API key, no microphone required
-for the demo. Swap `ask()` for your agent when you want the real brain.
+`demo` is typed. `live` uses the Mac microphone and `say`.
+Press Enter for push-to-talk if the wake word engine is not installed.
+Swap the brain with `--brain codex` or `--brain claude`.
 
-The GitHub repo is [davidjdseo/live-voice-agent](https://github.com/davidjdseo/live-voice-agent).
-The npm package name is `live-voice-agent`.
-
-This is not a new STT/TTS model and not a claim that every listed harness
-already has a native microphone. Planned adapters refuse to pretend.
+This is not a new STT/TTS model. Local live mode uses energy VAD +
+macOS `say`. Real ASR is still an engine you plug in.
 
 ## Inspired by GPT Live-style interaction
 
@@ -47,8 +46,10 @@ An agent harness only needs six capabilities for an adapter:
 | --- | --- | --- |
 | Generic `createVoiceBridge` | Implemented | Reusable VoiceCore construction, event dispatch, session ownership, and lifecycle. |
 | `createPromptAdapter` | Implemented | Drop in `ask(text)` and the loop speaks. No keys in this library. |
+| Local mic + `say` | Implemented | `npx live-voice-agent live`. Energy VAD, push-to-talk, macOS TTS. |
+| Codex CLI / Claude Code / Paseo | Implemented as brains | Prompt/session CLI seams via `--brain`. Not native mic/TTS of those apps. |
 | Hermes Agent | Implemented | Production adapter using public RPCs and `RpcEvent`. Optional. |
-| Paseo, Codex CLI, Claude Code, Orca | Planned | Factories exist and throw until a public mic/TTS/session seam is verified. |
+| Orca | Planned | Session lifecycle exists; no public prompt+event voice seam yet. |
 
 The adapter contract and authoring rules are in
 [docs/ADAPTERS.md](docs/ADAPTERS.md). A copy-paste starting point is
@@ -135,7 +136,7 @@ Every written assistant response remains complete and ends with exactly one
 closed Korean block:
 
 ```text
-<<<VOICE 지호, 확인했습니다. 다음으로 진행할까요? VOICE>>>
+<<<VOICE 확인했습니다. 다음으로 진행할까요? VOICE>>>
 ```
 
 Only that block reaches TTS. It is conversational, normally under five short
@@ -225,19 +226,19 @@ backs up SOUL, and removes only its managed block and install target.
 Written body: “오늘 일정에서 오전 회의는 10시로 확인했습니다.
 캘린더를 더 확인할까요?”
 
-Spoken block: `<<<VOICE 지호, 오전 회의는 10시로 확인했습니다.
+Spoken block: `<<<VOICE 오전 회의는 10시로 확인했습니다.
 더 확인할까요? VOICE>>>`
 
-User: “헤이 헤르메스 오후 일정도 봐줘.”
+User: “헤이 자비스 오후 일정도 봐줘.”
 
 The wake prefix is stripped, the command is submitted to the selected session,
 and meaningful speech during generation/playback is submitted with
 `interrupted: true`.
 
 While Live Voice is on, saying the wake phrase and command in one utterance is
-the fastest and recommended path, such as `헤이 헤르메스, 날씨 알려줘`.
+the fastest and recommended path, such as `헤이 자비스, 날씨 알려줘`.
 
-A bare `헤이 헤르메스` wake answers `네, 말씀하세요.` and then listens. It
+A bare `헤이 자비스` wake answers `네, 말씀하세요.` and then listens. It
 clears the after-reply gate and re-arms the recorder through the same single
 bounded pending timer used by idle status. It does not submit an empty prompt;
 filler/noise and unapproved post-reply speech remain ignored.

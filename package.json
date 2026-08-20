@@ -1,7 +1,7 @@
 {
   "name": "live-voice-agent",
-  "version": "0.1.0",
-  "description": "Live Voice Agent: always-on spoken assistant loop for any agent harness. Hermes is one adapter, not the product.",
+  "version": "0.2.0",
+  "description": "Always-on spoken assistant. Wake with 헤이 자비스. Attach any agent brain. Hermes is one adapter, not the product.",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -17,12 +17,14 @@
     "./bridge": "./src/bridge.js",
     "./core": "./src/core.js",
     "./always-on": "./src/alwayson/runtime.js",
+    "./always-on/local": "./src/alwayson/local.js",
     "./always-on/sidecar": "./src/alwayson/sidecar/engine.js",
     "./adapters/contract": "./src/adapters/contract.js",
     "./adapters/example": "./src/adapters/example.js",
     "./adapters/hermes": "./src/adapters/hermes.js",
     "./adapters/prompt": "./src/adapters/prompt.js",
-    "./adapters/generic": "./src/adapters/generic.js"
+    "./adapters/generic": "./src/adapters/generic.js",
+    "./adapters/cli": "./src/adapters/cli-agents.js"
   },
   "files": [
     "desktop",
@@ -48,6 +50,8 @@
   },
   "keywords": [
     "live voice agent",
+    "jarvis",
+    "hey jarvis",
     "live agent",
     "voice assistant",
     "always on voice",

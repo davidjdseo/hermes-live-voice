@@ -1,12 +1,13 @@
-# Agent Voice Bridge integrations
+# Live Voice Agent integrations
 
-Agent Voice Bridge is the attachable, session-safe voice layer in the
-`hermes-live-voice` repository: connect a harness adapter to reuse VoiceCore's
-wake gating, spoken-block parsing, TTS echo guard, interruption handling, and
-bounded re-arm behavior.
+Live Voice Agent is the attachable, session-safe voice layer in this
+repository. Connect a harness adapter to reuse VoiceCore's wake gating,
+spoken-block parsing, TTS echo guard, interruption handling, and bounded
+re-arm behavior. Wake is **헤이 자비스** / **hey jarvis**.
 
-Hermes is the only real adapter in v0.1. The rest of this document describes
-contract-ready integration work, not completed support.
+Hermes is one optional adapter. Codex CLI, Claude Code, and Paseo are
+implemented as prompt brains (`--brain`), not as native microphone apps.
+Orca is still planned.
 
 ## Why attach a voice bridge?
 

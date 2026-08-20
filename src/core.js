@@ -1,6 +1,6 @@
 export const PHASES = Object.freeze({ OFF: 'off', IDLE: 'idle', LISTENING: 'listening', THINKING: 'thinking', SPEAKING: 'speaking' });
 const VOICE_RE = /<<<VOICE\s*([\s\S]*?)\s*VOICE>>>/g;
-const CONTINUE = new Set(['진행해', '진행해 헤르메스', 'proceed', 'continue', 'go on', 'go']);
+const CONTINUE = new Set(['진행해', '진행해 자비스', '진행해 헤르메스', 'proceed', 'continue', 'go on', 'go']);
 const FILLERS = new Set(['음', '어', '아', '흠', 'um', 'uh', 'erm', 'hmm', 'okay', 'ok', '네', '응']);
 
 export function normalizeTranscript(value) { return String(value ?? '').normalize('NFKC').toLowerCase().replace(/[“”"'`.,!?;:()[\]{}<>]/g, ' ').replace(/\s+/g, ' ').trim(); }
@@ -38,7 +38,7 @@ export class VoiceCore {
     if (this.lastSpoken && ttsEchoSimilarity(text, this.lastSpoken) >= 0.72) return this.reject('tts echo');
     // TTS echo: reject if transcript contains a significant substring of last spoken text (handles Whisper misrecognition)
     if (this.lastSpoken) { const spoken = normalizeTranscript(this.lastSpoken).replaceAll(' ', ''), heard = n.replaceAll(' ', ''); if (spoken.length >= 4 && heard.length >= 4 && (spoken.includes(heard) || heard.includes(spoken))) return this.reject('tts echo substring'); }
-    const wake = /^(?:헤이\s*헤르메스(?=\s|$)|hey\s+hermes\b)\s*/i, hadWake = wake.test(text), command = text.replace(wake, '').trim(); if (hadWake && !command) return this.wake(sessionId);
+    const wake = /^(?:헤이\s*(?:자비스|자스비|jarvis|헤르메스)(?=\s|$)|hey\s+(?:jarvis|hermes)\b)\s*/i, hadWake = wake.test(text), command = text.replace(wake, '').trim(); if (hadWake && !command) return this.wake(sessionId);
     if (this.phase === PHASES.THINKING || this.phase === PHASES.SPEAKING) return meaningful(text) ? this.submit(text, true) : this.reject('filler/noise');
     if (this.afterReply && !hadWake) { if (CONTINUE.has(n) || (choice && this.lastQuestionChoices.has(choice))) return this.submit(text, false); return this.reject('not armed: continue cue or matching choice required'); }
     if (!this.armed && !hadWake) return this.reject('not armed'); return command ? this.submit(command, false) : this.reject('empty command');
