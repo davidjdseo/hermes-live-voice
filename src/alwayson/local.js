@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { ERROR_CODES } from './engines.js'
 import { createSttEngine, createSilenceStt } from './stt.js'
 
@@ -56,6 +56,7 @@ export function createMicSource({
   sampleRate = 16000,
   frameMs = 20,
   device = process.env.LIVE_VOICE_MIC || '0',
+  readyMs = 2500,
 } = {}) {
   const queue = pendingQueue()
   let child = null
@@ -68,12 +69,18 @@ export function createMicSource({
       child = spawn('ffmpeg', [
         '-nostdin', '-hide_banner', '-loglevel', 'error',
         '-f', 'avfoundation',
+        '-thread_queue_size', '512',
         '-i', avfoundationInput(device),
         '-ac', '1', '-ar', String(sampleRate),
         '-f', 's16le', '-acodec', 'pcm_s16le',
         'pipe:1',
       ], { stdio: ['ignore', 'pipe', 'pipe'] })
       let leftover = Buffer.alloc(0)
+      let firstChunk
+      const ready = new Promise((resolve, reject) => {
+        firstChunk = resolve
+        child.once('error', reject)
+      })
       child.stdout.on('data', chunk => {
         leftover = Buffer.concat([leftover, chunk])
         while (leftover.length >= bytesPerFrame) {
@@ -82,16 +89,31 @@ export function createMicSource({
           const pcm = new Int16Array(frame.buffer, frame.byteOffset, frame.byteLength / 2)
           queue.push({ pcm: new Int16Array(pcm), sampleRate, ts: Date.now() })
         }
+        firstChunk?.()
+        firstChunk = null
       })
-      child.stderr.on('data', () => {})
+      const errChunks = []
+      child.stderr.on('data', data => errChunks.push(data))
       child.once('exit', (code, signal) => {
         queue.end()
         child = null
         if (code && code !== 0 && signal !== 'SIGTERM') {
-          const error = Object.assign(new Error('Microphone capture ended'), { code: ERROR_CODES.DEVICE_LOST, exitCode: code, signal })
+          const detail = Buffer.concat(errChunks).toString('utf8').trim()
+          const error = Object.assign(new Error(detail || 'Microphone capture ended'), { code: ERROR_CODES.DEVICE_LOST, exitCode: code, signal })
           queue.error = error
         }
       })
+      let timer
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(Object.assign(new Error('Microphone did not produce audio. Grant ffmpeg/Terminal microphone permission, then retry.'), { code: ERROR_CODES.MIC_DENIED }))
+        }, readyMs)
+      })
+      try {
+        await Promise.race([ready, timeout])
+      } finally {
+        clearTimeout(timer)
+      }
     },
     async stop() {
       if (!child) {
@@ -102,6 +124,14 @@ export function createMicSource({
       child = null
       try { current.kill('SIGTERM') } catch {}
       queue.end()
+      await new Promise(resolve => {
+        const timer = setTimeout(resolve, 400)
+        current.once('exit', () => {
+          clearTimeout(timer)
+          resolve()
+        })
+      })
+      try { current.kill('SIGKILL') } catch {}
     },
     stream() {
       return queue.iterable
@@ -209,6 +239,42 @@ export function createSayTts({ voice = process.env.LIVE_VOICE_VOICE || 'Yuna' } 
       }
     },
   }
+}
+
+export function listAvfoundationAudioDevices() {
+  const result = spawnSync('ffmpeg', ['-hide_banner', '-f', 'avfoundation', '-list_devices', 'true', '-i', ''], { encoding: 'utf8' })
+  const text = `${result.stdout || ''}\n${result.stderr || ''}`
+  const audio = []
+  let inAudio = false
+  for (const line of text.split(/\r?\n/)) {
+    if (/AVFoundation audio devices/i.test(line)) {
+      inAudio = true
+      continue
+    }
+    if (/AVFoundation video devices/i.test(line)) {
+      inAudio = false
+      continue
+    }
+    const match = inAudio && line.match(/\[(\d+)\]\s+(.+)$/)
+    if (match) audio.push({ index: match[1], name: match[2].trim() })
+  }
+  return audio
+}
+
+export async function probeMicrophone({ device = process.env.LIVE_VOICE_MIC || '0', frames = 8 } = {}) {
+  const source = createMicSource({ device, readyMs: 2500 })
+  const started = Date.now()
+  await source.start()
+  let count = 0
+  let peak = 0
+  for await (const chunk of source.stream()) {
+    count++
+    const level = rms(chunk.pcm)
+    if (level > peak) peak = level
+    if (count >= frames) break
+  }
+  await source.stop()
+  return { ok: count > 0, frames: count, peak, ms: Date.now() - started, device }
 }
 
 export function createLocalEngines(options = {}) {

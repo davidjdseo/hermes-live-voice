@@ -1,6 +1,6 @@
 {
   "name": "live-voice-agent",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Always-on spoken assistant. Wake with 헤이 자비스. Attach any agent brain. Hermes is one adapter, not the product.",
   "type": "module",
   "license": "MIT",
@@ -42,7 +42,14 @@
     "README.md",
     "ARCHITECTURE.md",
     "SECURITY.md",
-    "docs",
+    "docs/ADAPTERS.md",
+    "docs/ALWAYS_ON_DESIGN.md",
+    "docs/BENCHMARK.md",
+    "docs/HARNESS_ADAPTER_TEMPLATE.md",
+    "docs/INTEGRATIONS.md",
+    "docs/PLAN.md",
+    "docs/PROTOCOL.md",
+    "docs/STT.md",
     "LICENSE",
     "examples"
   ],

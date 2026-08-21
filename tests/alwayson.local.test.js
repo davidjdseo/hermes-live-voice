@@ -77,6 +77,12 @@ test('local engines expose the five contracts', () => {
   assert.equal(typeof engines.tts.interrupt, 'function')
 })
 
+test('avfoundation device parser reads ffmpeg listing text', async () => {
+  const { listAvfoundationAudioDevices } = await import('../src/alwayson/local.js')
+  const devices = listAvfoundationAudioDevices()
+  assert.equal(Array.isArray(devices), true)
+})
+
 test('hey jarvis and hey 자스비 both arm VoiceCore', () => {
   const core = new VoiceCore({ wakeAcknowledgement: '' })
   core.start('s1')

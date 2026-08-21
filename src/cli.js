@@ -2,7 +2,7 @@
 import { createInterface } from 'node:readline'
 import { spawnSync } from 'node:child_process'
 import { createAlwaysOn } from './alwayson/runtime.js'
-import { createLocalEngines } from './alwayson/local.js'
+import { createLocalEngines, listAvfoundationAudioDevices, probeMicrophone } from './alwayson/local.js'
 import { createAgentBackend } from './adapters/cli-agents.js'
 import { ERROR_CODES } from './alwayson/engines.js'
 
@@ -146,10 +146,12 @@ async function live(argv) {
   const engines = createLocalEngines({ keyword: 'hey jarvis', stt })
   const backend = createAgentBackend({ brain, agentId: parseFlag(argv, '--agent') })
   const assistant = createAlwaysOn({ engines, backend, maxUtteranceMs: 20000, preRollMs: 1500, sampleRate: 16000 })
+  assistant.on('error', error => log(`[error] ${error.code || ''} ${error.message}`))
+  assistant.on('phase', phase => log(`[phase] ${phase}`))
   await attachAssistant(assistant, log)
   log('Starting microphone capture. If this hangs, grant Terminal/ffmpeg microphone permission, then retry.')
   await assistant.start()
-  log('Jarvis is listening. Say 헤이 자비스, or press Enter to push-to-talk. /quit to exit.')
+  log(`Jarvis is listening. STT=${stt} brain=${brain}. Say 헤이 자비스, or press Enter to push-to-talk. /quit to exit.`)
   const rl = createInterface({ input: process.stdin, output: process.stdout })
   rl.on('line', line => {
     const text = String(line ?? '').trim()
@@ -166,7 +168,7 @@ async function live(argv) {
   })
 }
 
-function doctor() {
+async function doctor() {
   const rows = [
     ['node', process.version],
     ['ffmpeg', which('ffmpeg') || 'MISSING — needed for live mic'],
@@ -190,7 +192,23 @@ function doctor() {
     voicebox = `unreachable ${voiceboxUrl}`
   }
   console.log(`${'voicebox'.padEnd(8)} ${voicebox}`)
-  if (!which('ffmpeg')) process.exitCode = 1
+  const devices = listAvfoundationAudioDevices()
+  if (devices.length) {
+    console.log('mics')
+    for (const device of devices) console.log(`  [${device.index}] ${device.name}`)
+  } else console.log(`${'mics'.padEnd(8)} none listed`)
+  if (!which('ffmpeg')) {
+    process.exitCode = 1
+    return
+  }
+  try {
+    const probe = await probeMicrophone({ frames: 8 })
+    console.log(`${'mic'.padEnd(8)} ${probe.ok ? 'ok' : 'silent'} frames=${probe.frames} peak=${probe.peak.toFixed(3)} ${probe.ms}ms`)
+    if (!probe.ok) process.exitCode = 1
+  } catch (error) {
+    console.log(`${'mic'.padEnd(8)} FAIL ${error.message}`)
+    process.exitCode = 1
+  }
 }
 
 const command = process.argv[2]
@@ -198,7 +216,7 @@ const argv = process.argv.slice(2)
 if (!command || command === '-h' || command === '--help') usage()
 else if (command === 'demo') await demo(argv)
 else if (command === 'live') await live(argv)
-else if (command === 'doctor') doctor()
+else if (command === 'doctor') await doctor()
 else {
   usage()
   process.exit(1)

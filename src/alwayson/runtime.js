@@ -196,6 +196,7 @@ export function createAlwaysOn({
     if (status.phase) {
       const next = status.phase;
       phase = next;
+      emit('phase', next);
       if (next === PHASES.LISTENING) {
         ioState = IO_STATES.TRANSCRIBING;
         // Start STT whenever we are LISTENING and no utterance is in flight.
