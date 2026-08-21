@@ -192,18 +192,27 @@ export function createPushToTalkWake({ keyword = 'hey jarvis' } = {}) {
   }
 }
 
-export function createAlwaysListenWake() {
-  let started = false
+export function createAlwaysListenWake({
+  keyword = 'hey jarvis',
+  speechRms = 0.02,
+  minSpeechMs = 220,
+} = {}) {
   return {
     detect(audio) {
       return (async function* () {
-        if (started) {
-          for await (const _ of audio) { /* keep the tee consumer alive */ }
-          return
+        let speechMs = 0
+        let last = 0
+        for await (const chunk of audio) {
+          const duration = (chunk.pcm?.length ?? 0) * 1000 / (chunk.sampleRate || 16000)
+          const level = rms(chunk.pcm)
+          if (level >= speechRms) speechMs += duration
+          else speechMs = 0
+          if (speechMs >= minSpeechMs && Date.now() - last > 1500) {
+            last = Date.now()
+            speechMs = 0
+            yield { keyword, score: Math.min(1, level / 0.1), ts: chunk.ts }
+          }
         }
-        started = true
-        yield { keyword: 'hey jarvis', score: 1, ts: Date.now() }
-        for await (const _ of audio) { /* keep consuming so the distributor does not stall */ }
       })()
     },
   }

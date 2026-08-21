@@ -13,6 +13,7 @@ Usage:
   npx live-voice-agent demo
   npx live-voice-agent live [--brain echo|codex|claude|opencode|gemini|paseo|openai|openrouter|orca]
   npx live-voice-agent live --stt voicebox|whisper-cli|openai|groq|elevenlabs|deepgram
+  npx live-voice-agent live --daemon
   npx live-voice-agent doctor
 
 demo   typed loop, no microphone
@@ -143,7 +144,13 @@ async function live(argv) {
   const log = message => console.log(message)
   const brain = parseFlag(argv, '--brain', 'echo')
   const stt = parseFlag(argv, '--stt', process.env.LIVE_VOICE_STT || 'voicebox')
-  const engines = createLocalEngines({ keyword: 'hey jarvis', stt })
+  const daemon = argv.includes('--daemon') || process.env.LIVE_VOICE_DAEMON === '1'
+  const alwaysListen = daemon || argv.includes('--always-listen')
+  const engines = createLocalEngines({
+    keyword: 'hey jarvis',
+    stt,
+    pushToTalk: alwaysListen ? false : true,
+  })
   const backend = createAgentBackend({ brain, agentId: parseFlag(argv, '--agent') })
   const assistant = createAlwaysOn({ engines, backend, maxUtteranceMs: 20000, preRollMs: 1500, sampleRate: 16000 })
   assistant.on('error', error => log(`[error] ${error.code || ''} ${error.message}`))
@@ -151,7 +158,16 @@ async function live(argv) {
   await attachAssistant(assistant, log)
   log('Starting microphone capture. If this hangs, grant Terminal/ffmpeg microphone permission, then retry.')
   await assistant.start()
-  log(`Jarvis is listening. STT=${stt} brain=${brain}. Say 헤이 자비스, or press Enter to push-to-talk. /quit to exit.`)
+  log(`Jarvis is listening. STT=${stt} brain=${brain}${daemon ? ' daemon' : ''}. Say 헤이 자비스${alwaysListen ? '.' : ', or press Enter to push-to-talk. /quit to exit.'}`)
+  if (daemon) {
+    const shutdown = async () => {
+      await assistant.stop().catch(() => {})
+      process.exit(0)
+    }
+    process.on('SIGTERM', shutdown)
+    process.on('SIGINT', shutdown)
+    return
+  }
   const rl = createInterface({ input: process.stdin, output: process.stdout })
   rl.on('line', line => {
     const text = String(line ?? '').trim()

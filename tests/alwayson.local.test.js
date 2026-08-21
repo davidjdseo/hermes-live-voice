@@ -83,6 +83,12 @@ test('avfoundation device parser reads ffmpeg listing text', async () => {
   assert.equal(Array.isArray(devices), true)
 })
 
+test('always-listen wake fires without push-to-talk', () => {
+  const engines = createLocalEngines({ pushToTalk: false, stt: 'silence' })
+  assert.equal(typeof engines.triggerWake, 'function')
+  assert.equal(engines.wakeword.detect.length, 1)
+})
+
 test('hey jarvis and hey 자스비 both arm VoiceCore', () => {
   const core = new VoiceCore({ wakeAcknowledgement: '' })
   core.start('s1')
