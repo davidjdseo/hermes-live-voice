@@ -140,9 +140,9 @@ export function createMicSource({
 }
 
 export function createEnergyVad({
-  speechRms = 0.018,
-  silenceRms = 0.008,
-  minSpeechMs = 180,
+  speechRms = 0.008,
+  silenceRms = 0.004,
+  minSpeechMs = 140,
   minSilenceMs = 400,
 } = {}) {
   return {
@@ -194,8 +194,8 @@ export function createPushToTalkWake({ keyword = 'hey jarvis' } = {}) {
 
 export function createAlwaysListenWake({
   keyword = 'hey jarvis',
-  speechRms = 0.02,
-  minSpeechMs = 220,
+  speechRms = 0.008,
+  minSpeechMs = 140,
 } = {}) {
   return {
     detect(audio) {
@@ -207,7 +207,7 @@ export function createAlwaysListenWake({
           const level = rms(chunk.pcm)
           if (level >= speechRms) speechMs += duration
           else speechMs = 0
-          if (speechMs >= minSpeechMs && Date.now() - last > 1500) {
+          if (speechMs >= minSpeechMs && Date.now() - last > 2500) {
             last = Date.now()
             speechMs = 0
             yield { keyword, score: Math.min(1, level / 0.1), ts: chunk.ts }

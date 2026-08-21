@@ -73,12 +73,36 @@ export function wavFromPcm(chunks, sampleRate = 16000) {
   return Buffer.concat([header, pcm])
 }
 
-export async function collectPcm(audio) {
+export async function collectPcm(audio, {
+  speechRms = 0.008,
+  endSilenceMs = 700,
+  maxMs = 8000,
+  minSpeechMs = 120,
+  waitMs = 1800,
+} = {}) {
   const chunks = []
   let sampleRate = 16000
+  let started = false
+  let speechMs = 0
+  let silenceMs = 0
+  let totalMs = 0
   for await (const chunk of audio) {
     if (chunk?.pcm) chunks.push(chunk)
     if (chunk?.sampleRate) sampleRate = chunk.sampleRate
+    const duration = (chunk?.pcm?.length ?? 0) * 1000 / (sampleRate || 16000)
+    totalMs += duration
+    const level = rms(chunk?.pcm)
+    if (level >= speechRms) {
+      started = true
+      speechMs += duration
+      silenceMs = 0
+    } else if (started) {
+      silenceMs += duration
+      if (silenceMs >= endSilenceMs && speechMs >= minSpeechMs) break
+    } else if (totalMs >= waitMs) {
+      break
+    }
+    if (totalMs >= maxMs) break
   }
   return { chunks, sampleRate }
 }

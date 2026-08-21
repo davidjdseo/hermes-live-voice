@@ -152,7 +152,7 @@ async function live(argv) {
     pushToTalk: alwaysListen ? false : true,
   })
   const backend = createAgentBackend({ brain, agentId: parseFlag(argv, '--agent') })
-  const assistant = createAlwaysOn({ engines, backend, maxUtteranceMs: 20000, preRollMs: 1500, sampleRate: 16000 })
+  const assistant = createAlwaysOn({ engines, backend, maxUtteranceMs: 12000, preRollMs: 1500, sampleRate: 16000 })
   assistant.on('error', error => log(`[error] ${error.code || ''} ${error.message}`))
   assistant.on('phase', phase => log(`[phase] ${phase}`))
   await attachAssistant(assistant, log)

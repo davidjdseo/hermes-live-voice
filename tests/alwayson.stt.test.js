@@ -54,6 +54,23 @@ test('voicebox STT posts multipart model field to /transcribe', async () => {
   assert.equal(calls[0].init.body.get('language'), 'ko')
 })
 
+test('collectPcm stops after end silence instead of waiting forever', async () => {
+  const { collectPcm } = await import('../src/alwayson/stt.js')
+  async function* stream() {
+    yield tone(0.05)
+    yield tone(0.05)
+    yield tone(0.001)
+    yield tone(0.001)
+    yield tone(0.001)
+    await new Promise(resolve => setTimeout(resolve, 30))
+    yield tone(0.001)
+  }
+  const started = Date.now()
+  const { chunks } = await collectPcm(stream(), { endSilenceMs: 20, minSpeechMs: 20, waitMs: 50, maxMs: 400 })
+  assert.ok(chunks.length >= 2)
+  assert.ok(Date.now() - started < 400)
+})
+
 test('elevenlabs STT uses xi-api-key and scribe_v2', async () => {
   const calls = []
   const fetchImpl = async (url, init) => {
