@@ -160,11 +160,8 @@ async function live(argv) {
   await assistant.start()
   log(`Jarvis is listening. STT=${stt} brain=${brain}${daemon ? ' daemon' : ''}. Say 헤이 자비스${alwaysListen ? '.' : ', or press Enter to push-to-talk. /quit to exit.'}`)
   if (daemon) {
-    try {
-      for await (const _ of engines.tts.speak('자비스 준비됐습니다. 헤이 자비스라고 말해 주세요.')) { /* drain */ }
-    } catch (error) {
-      log(`[error] greeting ${error.message}`)
-    }
+    const greeting = spawnSync('say', ['-v', process.env.LIVE_VOICE_VOICE || 'Yuna', '자비스 준비됐습니다. 헤이 자비스라고 말해 주세요.'], { encoding: 'utf8' })
+    if (greeting.status) log(`[error] greeting ${greeting.stderr || greeting.status}`)
     const shutdown = async () => {
       await assistant.stop().catch(() => {})
       process.exit(0)
