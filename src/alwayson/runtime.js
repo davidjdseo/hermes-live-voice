@@ -199,10 +199,9 @@ export function createAlwaysOn({
       emit('phase', next);
       if (next === PHASES.LISTENING) {
         ioState = IO_STATES.TRANSCRIBING;
-        // Start STT whenever we are LISTENING and no utterance is in flight.
-        // Do not require a phase change: start() already enters LISTENING, and
-        // wake() with acknowledgement disabled stays in LISTENING.
-        void beginUtterance(generation).catch(emitError);
+        // Do not start STT on every LISTENING enter. Daemon always-listen
+        // would otherwise consume the first utterance at boot and then ignore
+        // later speech. Wake events and VAD speech_start open STT instead.
       } else if (next === PHASES.SPEAKING) {
         ioState = IO_STATES.TTS_PLAYING;
         if (sttTask) {
@@ -275,9 +274,17 @@ export function createAlwaysOn({
     try {
       const iterable = engines.vad.detect(distributor.streams.vad, { signal: task.signal });
       for await (const event of iterateWithAbort(iterable, task.signal)) {
-        if (!task.isCurrent() || event?.type !== 'speech_start') continue;
-        if (phase !== PHASES.SPEAKING) continue;
-        void beginCandidate().catch(emitError);
+        if (!task.isCurrent()) continue;
+        if (event?.type === 'speech_start') {
+          if (phase === PHASES.SPEAKING) {
+            void beginCandidate().catch(emitError);
+            continue;
+          }
+          if (phase === PHASES.LISTENING || phase === PHASES.IDLE) {
+            bridge.core.wake(sessionId);
+            void beginUtterance(generation).catch(emitError);
+          }
+        }
       }
     } catch (error) {
       if (!isAbortError(error)) emitError(error);
